@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>ดูหน้าจอมือถือ</title>
+
+<style>
+body{
+    background:black;
+    text-align:center;
+}
+
+video{
+    width:95%;
+    margin-top:20px;
+    border:3px solid cyan;
+    border-radius:15px;
+}
+</style>
+
+</head>
+<body>
+
+<h1 style="color:white;">หน้าจอมือถือ</h1>
+
+<video id="video" autoplay playsinline></video>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+const socket = io();
+
+const video = document.getElementById("video");
+
+const peer = new RTCPeerConnection();
+
+peer.ontrack = e=>{
+    video.srcObject = e.streams[0];
+};
+
+peer.onicecandidate = e=>{
+    if(e.candidate){
+        socket.emit("candidate", e.candidate);
+    }
+};
+
+socket.on("offer", async(offer)=>{
+
+    await peer.setRemoteDescription(offer);
+
+    const answer = await peer.createAnswer();
+
+    await peer.setLocalDescription(answer);
+
+    socket.emit("answer", answer);
+
+});
+
+socket.on("candidate", async(candidate)=>{
+    try{
+        await peer.addIceCandidate(candidate);
+    }catch(err){}
+});
+
+</script>
+
+</body>
+</html>

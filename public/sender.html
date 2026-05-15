@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>มือถือแชร์หน้าจอ</title>
+
+<style>
+body{
+    background:#111;
+    color:white;
+    text-align:center;
+    font-family:sans-serif;
+}
+
+button{
+    padding:15px 30px;
+    font-size:20px;
+    margin-top:30px;
+    border:none;
+    border-radius:10px;
+    background:cyan;
+    cursor:pointer;
+}
+</style>
+
+</head>
+<body>
+
+<h1>แชร์หน้าจอมือถือ</h1>
+
+<button onclick="startShare()">
+เริ่มแชร์หน้าจอ
+</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+const socket = io();
+
+let peer = new RTCPeerConnection();
+
+peer.onicecandidate = e => {
+    if(e.candidate){
+        socket.emit("candidate", e.candidate);
+    }
+};
+
+async function startShare(){
+
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+        video:true
+    });
+
+    stream.getTracks().forEach(track=>{
+        peer.addTrack(track, stream);
+    });
+
+    const offer = await peer.createOffer();
+
+    await peer.setLocalDescription(offer);
+
+    socket.emit("offer", offer);
+
+    alert("แชร์หน้าจอแล้ว");
+}
+
+socket.on("answer", async(answer)=>{
+    await peer.setRemoteDescription(answer);
+});
+
+socket.on("candidate", async(candidate)=>{
+    try{
+        await peer.addIceCandidate(candidate);
+    }catch(err){}
+});
+
+</script>
+
+</body>
+</html>
